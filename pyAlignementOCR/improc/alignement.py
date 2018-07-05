@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import matplotlib as mpl
 from PIL import Image
+import modif_func as mf
 
 options = {1: 'sub',
            2: 'ins',
@@ -18,7 +19,7 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     :param affichage : controle le type d'affichage
     """
     #  on convertit en niveaux de gris l'image et on le reduit ensuite
-    img = image.convert('gray')
+    img = image.convert('L')
     hauteur, largeur = img.size
     cimg = reduire(img, limitesup, limiteinf)
     hauteur, largeur = cimg.size
@@ -39,10 +40,11 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     noir = np.floor(np.sum(intensitemin)/largeur)
     gris = (blanc + noir) / 2
     # creation de la masque/profil d'intensite de la ligne
-    profil = creermasque(longeurtext, hauteur, largeur, noir, gris, blanc)
+    profil = creermasque(transcript, hauteur, largeur, noir, gris, blanc)
     profil = np.sum(profil, axis=1) / hauteur
     # on seuil les valeurs basses de l'intensit? lisse pour les ramener
     # a la valeur moyenne des noirs
+    largeurprofil = profil.shape[0]
     for i in range(1, largeur):
         if intensitelisse[i] < noir:
             intensitelisse[i] = noir
@@ -55,18 +57,18 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     segmentation = np.zeros((x, 1))
 
     # initialisation de la premiere ligne
-    appariement[1, 1] = np.abs(intensite[1] - profil[1])
-    precedent[1, 1] = 0
+    appariement[0, 0] = np.abs(intensite[0] - profil[0])
+    precedent[0, 0] = 0
 
-    for i in range(2, x):
-        appariement[x, 1] = appariement[x-1, 1] + np.abs(intensite[i]
-                                                         - profil[1])
-        precedent[i, 1] = insertion
+    for i in range(1, x):
+        appariement[x, 0] = appariement[x-0, 0] + np.abs(intensite[i]
+                                                         - profil[0])
+        precedent[i, 0] = insertion
     # tbc
-    for i in range(2, y):
-        appariement[1, y] = appariement[1, y-1] + np.abs(intensite[1]
+    for i in range(1, y):
+        appariement[0, y] = appariement[0, y-1] + np.abs(intensite[0]
                                                          - profil[i])
-        precedent[1, y] = destruction
+        precedent[0, y] = destruction
     # on boucle sur toute l'image et toute la sequence des caracteres
     for i in range(2, x):
         for j in range(2, y):
@@ -94,7 +96,7 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
                                                      segmentation)
 
 
-def creermasque(longeurtranscript, hauteurimg, largeurimg, carclr, wsclr,
+def creermasque(transcript, hauteurimg, largeurimg, carclr, wsclr,
                 boxclr):
     """Fonction qui cree une masque/profil pour compare avec l'image donne
     :param transcript : le transcript qu'on utilise pour creer la masque
@@ -107,16 +109,19 @@ def creermasque(longeurtranscript, hauteurimg, largeurimg, carclr, wsclr,
         profil : la masque derive du transcript correspondant aux niveaux
         d'intensite de l'image
     """
-    largeurcaractere = np.floor(largeur/longeurtext)
-    profilcaractere = np.ones((hauteur, largeucaractere)) * carclr
+    longeurtext = len(transcript)
+    largeurcaractere = np.floor(largeurimg/longeurtext).astype(np.int)
+    largeurcaractere
+    profilcar = np.ones((hauteurimg, largeurcaractere)).astype(np.int)*carclr
+    profilcar[:, largeurcaractere-1] = wsclr
     largeurprofil = largeurcaractere * longeurtext
-    profil = np.ones((hauteur, largeurprofil)) * boxclr
+    profil = np.ones((hauteurimg, largeurprofil), dtype=np.int) * boxclr
     # ici on genere l'allure de la masque
-    debut = 1
+    debut = 0
     fin = largeurcaractere
     for i in range(debut, longeurtext):
         if transcript[i] != ' ':
-            profil[:, debut:fin] = profilcaractere[:, :]
+            profil[:, debut:fin] = profilcar[:, :]
         debut = debut + largeurcaractere
         fin = fin + largeurcaractere
     # profilimg = Image.fromarray(np.uint8(profil))
@@ -128,10 +133,12 @@ def reduire(image, limitesup, limiteinf):
     :param image : l'image a reduire
     :param limitesup : une limite qui sera utilise afin de couper l'image
     :param limiteinf : une limite qui sera utilise afin de couper l'image
+    :return : img
+        img : l'image reduite
     """
     hauteur, largeur = image.size
-    img = image.crop(0, np.floor(limitesup*hauteur)+1,
-                     largeur, hauteur - floor(limiteinf*hauteur))
+    img = image.crop((0, np.floor(limitesup*hauteur)+1,
+                     largeur, hauteur - np.floor(limiteinf*hauteur)))
     return img
 
 
@@ -164,4 +171,19 @@ def des(x, y, precedent, segmentation):
 
 # TEST DE MODULE
 if __name__ == "__main__":
-    print('hello world')
+    # test de reduction d'image
+    img = Image.open('images.jpg')
+    # img.show()
+    newimg = reduire(img, 0.3, 0.3)
+    # newimg.show()
+    # test de creation de masque
+    blanc = 255
+    gris = 128
+    noir = 0
+    transcript = 'Hello world'
+    masque = creermasque(transcript, 40, 50, noir, gris, blanc)
+    masqueimg = Image.fromarray(np.uint8(masque))
+    # masqueimg.show()
+    # test de segmentation
+    img = Image.open('hwa.jpg').convert('L')
+    segmenter(img, transcript, 3, 0, 0, 0)
