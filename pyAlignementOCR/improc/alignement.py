@@ -41,7 +41,7 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     gris = (blanc + noir) / 2
     # creation de la masque/profil d'intensite de la ligne
     profil = creermasque(transcript, hauteur, largeur, noir, gris, blanc)
-    profil = np.sum(profil, axis=1) / hauteur
+    profil = np.sum(profil, axis=0) / hauteur
     # on seuil les valeurs basses de l'intensit? lisse pour les ramener
     # a la valeur moyenne des noirs
     largeurprofil = profil.shape[0]
@@ -51,6 +51,8 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     intensite = intensitelisse
     x = largeur
     y = largeurprofil
+    print(x, y)
+    print(intensite.shape, profil.shape)
     # tbc
     appariement = np.zeros((x, y))
     precedent = np.zeros((x, y))
@@ -59,13 +61,12 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     # initialisation de la premiere ligne
     appariement[0, 0] = np.abs(intensite[0] - profil[0])
     precedent[0, 0] = 0
-
-    for i in range(1, x):
-        appariement[x, 0] = appariement[x-0, 0] + np.abs(intensite[i]
+    for i in range(1, x-1):
+        appariement[x, 0] = appariement[x-1, 0] + np.abs(intensite[i]
                                                          - profil[0])
         precedent[i, 0] = insertion
     # tbc
-    for i in range(1, y):
+    for i in range(1, y-1):
         appariement[0, y] = appariement[0, y-1] + np.abs(intensite[0]
                                                          - profil[i])
         precedent[0, y] = destruction
@@ -180,7 +181,7 @@ if __name__ == "__main__":
     blanc = 255
     gris = 128
     noir = 0
-    transcript = 'Hello world'
+    transcript = 'Hello world a b c'
     masque = creermasque(transcript, 40, 50, noir, gris, blanc)
     masqueimg = Image.fromarray(np.uint8(masque))
     # masqueimg.show()
