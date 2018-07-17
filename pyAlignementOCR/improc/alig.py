@@ -1,4 +1,5 @@
 import numpy as np
+import pdb
 import scipy as sp
 import matplotlib as mpl
 from PIL import Image
@@ -33,19 +34,16 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     indexmin = np.argmin(cimarray, axis=0)
     intensitelisse = mf.lissage(intensite, lissage)
     # on definie les couleurs de notre masque
-    # blanc = np.floor(np.sum(intensitemax)/largeur)
-    # noir = np.floor(np.sum(intensitemin)/largeur)
-    # gris = (blanc + noir) / 2
-    blanc = 255
-    gris = 128
-    noir = 0
+    blanc = np.floor(np.sum(intensitemax)/largeur)
+    noir = np.floor(np.sum(intensitemin)/largeur)
+    gris = (blanc + noir) / 2
     # creation de la masque/profil d'intensite de la ligne
     profil = creermasque(transcript, largeur, hauteur, noir, gris, blanc)
     profil = np.sum(profil, axis=0) / hauteur
     # on seuil les valeurs basses de l'intensit? lisse pour les ramener
     # a la valeur moyenne des noirs
     largeurprofil = profil.shape[0]
-    for i in range(0, largeur-1):
+    for i in range(1, largeur):
         if intensitelisse[i] < noir:
             intensitelisse[i] = noir
     intensite = intensitelisse
@@ -91,12 +89,12 @@ def segmenter(image, transcript, lissage, limitesup, limiteinf, affichage):
     # print(precedent)
     print(precedent)
     print(x, y)
-    while precedent[x-1, y-1] != 0:
-        x, y, segmentation = options[sub](x, y, precedent,
+    while (precedent[x, y] != 0):
+        x, y, precedent, segmentation = options[sub](x, y, precedent,
                                                      segmentation)
-        x, y, segmentation = options[ins](x, y, precedent,
+        x, y, precedent, segmentation = options[ins](x, y, precedent,
                                                      segmentation)
-        x, y, segmentation = options[des](x, y, precedent,
+        x, y, precedent, segmentation = options[des](x, y, precedent,
                                                      segmentation)
 
 
@@ -145,31 +143,31 @@ def reduire(image, limitesup, limiteinf):
     return img
 
 
-def sub(x, y, segmentation, precedent):
+def sub(x, y, precedent, segmentation):
     if precedent[x, y] == 1:
         x = x - 1
         y = y - 1
-        if profil[y] == blanc:
+        if (profil[y] == blanc):
             segmentation[x] = 2
         elif profil[y] == gris:
             segmentation[x] = 1
-    return x, y, segmentation
+    return x, y, precedent, segmentation
 
 
-def ins(x, y, segmentation, precedent):
+def ins(x, y, precedent, segmentation):
     if precedent[x, y] == 2:
         x = x - 1
         if profil[y] == blanc:
             segmentation[x] = 2
         elif profil[y] == gris:
             segmentation[x] = 1
-    return x, y, segmentation
+    return x, y, precedent, segmentation
 
 
-def des(x, y, segmentation, precedent):
+def des(x, y, precedent, segmentation):
     if precedent[x, y] == 3:
         y = y - 1
-    return x, y, segmentation
+    return x, y, precedent, segmentation
 
 options = {0: 'sub',
            1: 'ins',
@@ -194,4 +192,5 @@ if __name__ == "__main__":
     # masqueimg.show()
     # test de segmentation
     img = Image.open('hwb.jpg').convert('L')
+    pdb.set_trace()
     segmenter(img, transcript, 3, 0, 0.1, 0.9)
