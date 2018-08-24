@@ -18,7 +18,7 @@ def lissage(intensite, N):
     longeur, hauteur = iintensite.shape[0], iintensite.shape[1]
     sortie = np.zeros((longeur, 1))
     debut = intensite[0:np.floor(N/2).astype(np.int)]
-    fin = intensite[N-np.floor(N/2).astype(np.int)-1:N]
+    fin = intensite[N-np.floor(N/2).astype(np.int)+1:N]
     # to be seen
     if N > 3:
         debut = np.flip(debut)
@@ -26,8 +26,9 @@ def lissage(intensite, N):
     entree = np.concatenate((debut, intensite, fin))
     # to be seen
     M = N - 1
-    for j in range(0, longeur):
+    for j in range(0, longeur-1):
         sortie[j] = np.dot(entree[j:j+M+1], fenetre)
+    sortie = sortie/N
     return sortie
 
 
