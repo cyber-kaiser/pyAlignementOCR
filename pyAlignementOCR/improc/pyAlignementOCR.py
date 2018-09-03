@@ -35,7 +35,7 @@ if not args.stdout:
         plt.subplot(len(imglist),1,i+1)
         af.screen1(imglist[i], transcriptlist[i])
         plt.axis('off')
-    f.savefig("foo.pdf")
+    f.savefig("resultats.pdf")
 else:
     for i in range(len(imglist)):
         plt.subplot(len(imglist),1,i+1)

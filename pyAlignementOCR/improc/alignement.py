@@ -137,6 +137,10 @@ def reduire(image, limitesup, limiteinf):
     return img
 
 
+def tracercontour(image, transcript):
+    return print('tbc')
+
+
 def sub(x, y, segmentation, precedent, profil, blanc, gris):
     if precedent[x-1, y-1] == 1:
         x = x - 1
